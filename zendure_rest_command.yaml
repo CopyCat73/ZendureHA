@@ -1,0 +1,55 @@
+rest_command:
+  zendure_opslaan_in_flash:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"smartMode": 0 }}'
+
+  zendure_opslaan_in_ram:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"smartMode": 1 }}'
+
+  zendure_snel_laden:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"acMode": 1, "inputLimit": 2400 }}'
+
+  zendure_stop_met_laden:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"acMode": 1, "inputLimit": 0 }}'
+
+  zendure_x_laden:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"acMode": 1, "inputLimit": {{inputLimit}} }}'
+
+  zendure_x_laden_balanceren:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"inputLimit": {{inputLimit}} }}'
+
+  zendure_x_ontladen:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"acMode": 2, "outputLimit": {{outputLimit}} }}'
+
+  zendure_x_ontladen_balanceren:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"outputLimit": {{outputLimit}} }}'
+
+  zendure_snel_ontladen:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"acMode": 2, "outputLimit": 2400 }}'
+
+  zendure_stop_met_ontladen:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"acMode": 2, "outputLimit": 0 }}'
+
+  zendure_stop_met_alles:
+    url: http://<IP-BATTERIJ>/properties/write
+    method: POST
+    payload: '{"sn":"<SERIAL-2400AC>","properties":{"outputLimit": 0, "inputLimit": 0 }}'
