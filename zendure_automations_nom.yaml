@@ -1,0 +1,264 @@
+alias: Zendure NOM 1.00
+description: ""
+triggers:
+  - trigger: time_pattern
+    seconds: /4
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: sensor.zendure_2400_ac_opslagmodus
+            state: Opslaan in Flash
+        sequence:
+          - action: rest_command.zendure_opslaan_in_ram
+            data: {}
+        alias: Wanneer opslag modus op Flash staat deze op RAM instellen
+      - conditions:
+          - condition: numeric_state
+            entity_id: sensor.p1_zendure_aansturing_api_v1
+            above: 100
+          - condition: numeric_state
+            entity_id: sensor.zendure_2400_ac_vermogen_aansturing_api_v1
+            enabled: true
+            above: -1
+            below: 75
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: sensor.zendure_2400_ac_modus
+                state: Opladen
+                enabled: true
+                for:
+                  hours: 0
+                  minutes: 0
+                  seconds: 9
+              - condition: state
+                entity_id: sensor.zendure_2400_ac_modus
+                state: Ontladen
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: input_select.zendure_2400_ac_modus_selecteren
+                state: Nul op de meter
+                enabled: true
+              - condition: state
+                entity_id: input_select.zendure_2400_ac_modus_selecteren
+                state: Alleen slim ontladen
+        sequence:
+          - data:
+              outputLimit: >-
+                {% set factor = 0.75 %} {% set cap = 1200 %} {% set correctie =
+                0 %}
+
+                {% set p1 = states('sensor.p1_zendure_aansturing_api_v1') |
+                float(0) %} {% set zendure =
+                states('sensor.zendure_2400_ac_vermogen_aansturing_api_v1') |
+                float(0) %}
+
+                {% set totaal = (p1 - zendure - correctie) * factor %} {% set
+                beperkt = [ [totaal, 0] | max, cap ] | min %}
+
+                {{ beperkt | int }}
+
+                    
+            action: rest_command.zendure_x_ontladen
+        alias: Start met ontladen bij +100 watt (75% van de vraag)
+      - conditions:
+          - condition: template
+            value_template: >-
+              {% set factor = 1.00 %} {% set cap = 1200 %} {% set correctie = 0
+              %}
+
+              {% set p1 = states('sensor.p1_zendure_aansturing_api_v1') |
+              float(0) %} {% set zendure =
+              states('sensor.zendure_2400_ac_vermogen_aansturing_api_v1') |
+              float(0) %}
+
+              {% set totaal = (p1 - zendure - correctie) * factor %} {% set
+              beperkt = [ [totaal, 0] | max, cap ] | min %} {% set target =
+              beperkt | int %} {% set huidig =
+              states('sensor.zendure_2400_ac_ingesteld_ontlaadvermogen_2') |
+              int(0) %}
+
+              {{ huidig != target }}
+          - condition: numeric_state
+            entity_id: sensor.zendure_2400_ac_vermogen_aansturing_api_v1
+            enabled: true
+            below: 0
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: input_select.zendure_2400_ac_modus_selecteren
+                state: Nul op de meter
+                enabled: true
+              - condition: state
+                entity_id: input_select.zendure_2400_ac_modus_selecteren
+                state: Alleen slim ontladen
+        sequence:
+          - data:
+              outputLimit: >-
+                {% set factor = 1.00 %} {% set cap = 1200 %} {% set correctie =
+                0 %}
+
+                {% set p1 = states('sensor.p1_zendure_aansturing_api_v1') |
+                float(0) %} {% set zendure =
+                states('sensor.zendure_2400_ac_vermogen_aansturing_api_v1') |
+                float(0) %}
+
+                {% set totaal = (p1 - zendure - correctie) * factor %} {% set
+                beperkt = [ [totaal, 0] | max, cap ] | min %}
+
+                {{ beperkt | int }}
+
+                    
+            action: rest_command.zendure_x_ontladen_balanceren
+            enabled: true
+        alias: Tijdens ontladen balanceren naar 0 watt (100% van de vraag)
+      - conditions:
+          - condition: numeric_state
+            entity_id: sensor.p1_zendure_aansturing_api_v1
+            below: -100
+          - condition: numeric_state
+            entity_id: sensor.zendure_2400_ac_laadpercentage
+            below: 99
+          - condition: numeric_state
+            entity_id: sensor.zendure_2400_ac_vermogen_aansturing_api_v1
+            below: 15
+            above: -10
+          - condition: or
+            conditions:
+              - condition: template
+                value_template: |
+                  {% set maand = now().month %} {{ maand < 4 or maand > 9 }}
+              - condition: and
+                conditions:
+                  - condition: template
+                    value_template: >
+                      {% set maand = now().month %} {{ maand >= 4 and maand <= 9
+                      }}
+                  - condition: sun
+                    after: sunrise
+                    before: sunset
+                    after_offset: "+02:00:00"
+                    before_offset: "-01:00:00"
+          - condition: not
+            conditions:
+              - condition: state
+                entity_id: sensor.zendure_2400_ac_modus
+                state: ontladen
+                for:
+                  hours: 0
+                  minutes: 0
+                  seconds: 15
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: input_select.zendure_2400_ac_modus_selecteren
+                state: Nul op de meter
+                enabled: true
+              - condition: state
+                entity_id: input_select.zendure_2400_ac_modus_selecteren
+                state: Alleen slim opladen
+        sequence:
+          - data:
+              inputLimit: >-
+                {% set factor = 0.75 %} {% set cap = 1200 %} {% set
+                correctie_export = 80 %}
+
+                {% set p1 = states('sensor.p1_zendure_aansturing_api_v1') |
+                float(0) %} {% set zendure =
+                states('sensor.zendure_2400_ac_vermogen_aansturing_api_v1') |
+                float(0) %}
+
+                {% set verschil = zendure - p1 - correctie_export %} {% set
+                beperkt = verschil if verschil > 0 else 0 %} {% set beperkt =
+                beperkt if beperkt < cap else cap %}
+
+                {{ beperkt | int }}
+            action: rest_command.zendure_x_laden
+            enabled: true
+        alias: >-
+          Start met opladen bij -100 watt (alleen tussen 2u na ☀︎ en 1u voor ☾)
+          (75% van aanbod)
+      - conditions:
+          - condition: template
+            value_template: >-
+              {% set factor = 1.00 %} {% set cap = 1200 %} {% set
+              correctie_export = 80 %}
+
+              {% set p1 = states('sensor.p1_zendure_aansturing_api_v1') |
+              float(0) %} {% set zendure =
+              states('sensor.zendure_2400_ac_vermogen_aansturing_api_v1') |
+              float(0) %}
+
+              {% set verschil = zendure - p1 - correctie_export %} {% set
+              beperkt = verschil if verschil > 0 else 0 %} {% set beperkt =
+              beperkt if beperkt < cap else cap %} {% set target = beperkt | int
+              %} {% set huidig =
+              states('sensor.zendure_2400_ac_ingesteld_oplaadvermogen_2') |
+              int(0) %}
+
+              {{ huidig != target }}
+          - condition: numeric_state
+            entity_id: sensor.zendure_2400_ac_laadpercentage
+            below: 99
+          - condition: numeric_state
+            entity_id: sensor.zendure_2400_ac_vermogen_aansturing_api_v1
+            above: 0
+          - condition: or
+            conditions:
+              - condition: template
+                value_template: |
+                  {% set maand = now().month %} {{ maand < 4 or maand > 9 }}
+              - condition: and
+                conditions:
+                  - condition: template
+                    value_template: >
+                      {% set maand = now().month %} {{ maand >= 4 and maand <= 9
+                      }}
+                  - condition: sun
+                    after: sunrise
+                    before: sunset
+                    after_offset: "+02:00:00"
+                    before_offset: "-01:00:00"
+          - condition: not
+            conditions:
+              - condition: state
+                entity_id: sensor.zendure_2400_ac_modus
+                state: ontladen
+                for:
+                  hours: 0
+                  minutes: 0
+                  seconds: 15
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: input_select.zendure_2400_ac_modus_selecteren
+                state: Nul op de meter
+                enabled: true
+              - condition: state
+                entity_id: input_select.zendure_2400_ac_modus_selecteren
+                state: Alleen slim opladen
+        sequence:
+          - data:
+              inputLimit: >-
+                {% set factor = 1.00 %} {% set cap = 1200 %} {% set
+                correctie_export = 80 %}
+
+                {% set p1 = states('sensor.p1_zendure_aansturing_api_v1') |
+                float(0) %} {% set zendure =
+                states('sensor.zendure_2400_ac_vermogen_aansturing_api_v1') |
+                float(0) %}
+
+                {% set verschil = zendure - p1 - correctie_export %} {% set
+                beperkt = verschil if verschil > 0 else 0 %} {% set beperkt =
+                beperkt if beperkt < cap else cap %}
+
+                {{ beperkt | int }}
+            action: rest_command.zendure_x_laden_balanceren
+            enabled: true
+        alias: >-
+          Tijdens opladen balanceren naar -80 watt (alleen tussen 2u na ☀︎ en 1u
+          voor ☾) (100% van aanbod)
+mode: single
