@@ -1,0 +1,74 @@
+alias: Pas Zendure 2400 AC Modus Aan
+description: ""
+triggers:
+  - entity_id:
+      - input_select.zendure_2400_ac_modus_selecteren
+    trigger: state
+actions:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: input_select.zendure_2400_ac_modus_selecteren
+            state: Nul op de meter
+        sequence:
+          - action: automation.turn_on
+            metadata: {}
+            data: {}
+            target:
+              entity_id: automation.zendure_nom_1_00
+          - action: rest_command.zendure_stop_met_alles
+            data: {}
+      - conditions:
+          - condition: state
+            entity_id: input_select.zendure_2400_ac_modus_selecteren
+            state: Standby
+        sequence:
+          - action: automation.turn_off
+            metadata: {}
+            data:
+              stop_actions: true
+            target:
+              entity_id: automation.zendure_nom_1_00
+          - action: rest_command.zendure_stop_met_alles
+            data: {}
+      - conditions:
+          - condition: state
+            entity_id: input_select.zendure_2400_ac_modus_selecteren
+            state: Ontladen met 2400 watt
+        sequence:
+          - action: automation.turn_off
+            metadata: {}
+            data:
+              stop_actions: true
+            target:
+              entity_id: automation.zendure_nom_1_00
+          - action: rest_command.zendure_snel_ontladen
+            data: {}
+      - conditions:
+          - condition: state
+            entity_id: input_select.zendure_2400_ac_modus_selecteren
+            state: Opladen met 2400 watt
+        sequence:
+          - action: automation.turn_off
+            metadata: {}
+            data:
+              stop_actions: true
+            target:
+              entity_id: automation.zendure_nom_1_00
+          - action: rest_command.zendure_snel_laden
+            data: {}
+      - conditions:
+          - condition: state
+            entity_id: input_select.zendure_2400_ac_modus_selecteren
+            state: Alleen slim ontladen
+        sequence:
+          - action: rest_command.zendure_stop_met_alles
+            data: {}
+      - conditions:
+          - condition: state
+            entity_id: input_select.zendure_2400_ac_modus_selecteren
+            state: Alleen slim opladen
+        sequence:
+          - action: rest_command.zendure_stop_met_alles
+            data: {}
+mode: single
